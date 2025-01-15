@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -59,28 +60,44 @@ fun ItemListScreen(
     navController: NavHostController
 ) {
     val items = viewModel.listStringData.collectAsState()
-
-    DisposableEffect(navigate.value) {
-        if (navigate.value.isNotBlank()) {
-            val currRoute = navController.currentDestination?.route.orEmpty()
-            if (!currRoute.contains("item_detail")) {
-                navController.navigate("item_detail/${navigate.value}")
-            }
-        }
-        navigate.value = ""
-        onDispose {  }
+    val searchQuery = remember { mutableStateOf("") }
+    val filteredItems = items.value.filter {
+        it.name.contains(searchQuery.value, ignoreCase = true)
     }
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        items(items.value) { item ->
-            ItemCard(
-                item = item,
-                onClick = { onNavigateToDetail(item.id) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(
+            value = searchQuery.value,
+            onValueChange = { searchQuery.value = it },
+            label = { Text("Search") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        DisposableEffect(navigate.value) {
+            if (navigate.value.isNotBlank()) {
+                val currRoute = navController.currentDestination?.route.orEmpty()
+                if (!currRoute.contains("item_detail")) {
+                    navController.navigate("item_detail/${navigate.value}")
+                }
+            }
+            navigate.value = ""
+
+            onDispose { }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            items(filteredItems) { item ->
+                ItemCard(
+                    item = item,
+                    onClick = { onNavigateToDetail(item.id) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
